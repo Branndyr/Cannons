@@ -333,6 +333,7 @@ public class DesignStorage
 
 		// accessRestriction
 		cannonDesign.setAccessForOwnerOnly(cannonDesignConfig.getBoolean("accessRestriction.ownerOnly", false));
+		cannonDesign.setNeedsShip(cannonDesignConfig.getBoolean("accessRestriction.needsShip", false));
 
 		// allowedProjectiles
 		cannonDesign.setAllowedProjectiles(cannonDesignConfig.getStringList("allowedProjectiles"));

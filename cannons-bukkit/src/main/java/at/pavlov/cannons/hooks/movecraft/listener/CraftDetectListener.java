@@ -63,6 +63,12 @@ public class CraftDetectListener implements Listener {
                         + cannonName + ": " + error);
             });
         }
+
+        //Mark cannons as on a craft
+        for (Cannon i: cannons) {
+            i.setOnShip(true);
+        }
+
     }
 
     private void printCannonCount(Map<String, Integer> cannonCount) {

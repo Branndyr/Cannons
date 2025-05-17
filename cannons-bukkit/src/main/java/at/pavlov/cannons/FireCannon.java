@@ -77,6 +77,8 @@ public class FireCannon {
         //automatic temperature control, prevents overheating of the cannon
         if (design.isAutomaticTemperatureControl() && cannon.isOverheatedAfterFiring())
             return MessageEnum.ErrorBarrelTooHot;
+        if (design.isNeedsShip() && !cannon.isOnShip())
+            return MessageEnum.ErrorNotOnShip;
 
         if (player == null) {
             return MessageEnum.CannonFire;

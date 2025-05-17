@@ -3,6 +3,7 @@ package at.pavlov.cannons.hooks.movecraft;
 import at.pavlov.cannons.Cannons;
 import at.pavlov.cannons.hooks.BukkitHook;
 import at.pavlov.cannons.hooks.movecraft.listener.CraftDetectListener;
+import at.pavlov.cannons.hooks.movecraft.listener.ReleaseListener;
 import at.pavlov.cannons.hooks.movecraft.listener.RotationListener;
 import at.pavlov.cannons.hooks.movecraft.listener.TranslationListener;
 import at.pavlov.internal.Hook;
@@ -40,6 +41,7 @@ public class MovecraftHook extends BukkitHook<Movecraft> {
         pluginManager.registerEvents(new CraftDetectListener(), plugin);
         pluginManager.registerEvents(new TranslationListener(), plugin);
         pluginManager.registerEvents(new RotationListener(), plugin);
+        pluginManager.registerEvents(new ReleaseListener(), plugin);
         plugin.logInfo(ChatColor.GREEN + enabledMessage());
     }
 
@@ -48,6 +50,7 @@ public class MovecraftHook extends BukkitHook<Movecraft> {
         HandlerList.unregisterAll(new CraftDetectListener());
         HandlerList.unregisterAll(new TranslationListener());
         HandlerList.unregisterAll(new RotationListener());
+        HandlerList.unregisterAll(new ReleaseListener());
     }
 
     @Override

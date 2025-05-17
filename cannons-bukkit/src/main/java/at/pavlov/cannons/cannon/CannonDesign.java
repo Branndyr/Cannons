@@ -151,6 +151,7 @@ import java.util.List;
 	
 	//accessRestriction
 	private boolean accessForOwnerOnly;
+	private boolean needsShip;
 	
 	//allowedProjectile
 	private List<String> allowedProjectiles;
@@ -193,6 +194,7 @@ import java.util.List;
     //cannon design block lists for every direction (NORTH, EAST, SOUTH, WEST)
     private final HashMap<BlockFace, CannonBlocks> cannonBlockMap = new HashMap<>();
 	private final EnumSet<Material> allowedMaterials = EnumSet.noneOf(Material.class);
+
 
 
     
@@ -615,4 +617,6 @@ import java.util.List;
 	public double getOverloadingChangeInc() {
 		return overloadingChanceInc;
 	}
+
+	public boolean isNeedsShip() { return needsShip; }
 }
