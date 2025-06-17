@@ -23,6 +23,8 @@ import at.pavlov.cannons.scheduler.FakeBlockHandler;
 import at.pavlov.cannons.utils.CannonsUtil;
 import at.pavlov.cannons.utils.SoundUtils;
 import lombok.Getter;
+import net.countercraft.movecraft.craft.CraftManager;
+import net.countercraft.movecraft.craft.PlayerCraft;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -35,16 +37,12 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 
+import java.awt.*;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 
 public class Aiming {
@@ -55,6 +53,9 @@ public class Aiming {
 
     //<Player,cannon name>
     private final HashMap<UUID, UUID> inAimingMode = new HashMap<>();
+    //<Player,cannon name>
+    private final HashMap<UUID, HashSet<UUID>> inCraftAimingMode = new HashMap<>();
+    public final HashMap<UUID, Long> craftModeLastAimed = new HashMap<>();
     //<Cannon>
     private final HashSet<UUID> sentryCannons = new HashSet<>();
     //<Player>
@@ -103,6 +104,12 @@ public class Aiming {
                 plugin.logDebug("Time update aiming: " + new DecimalFormat("0.00").format(time) + "ms");
 
             startTime = System.nanoTime();
+            updateCraftAimingMode();
+            time = (System.nanoTime() - startTime) / 1000000.0;
+            if (time > 10.)
+                plugin.logDebug("Time update craft aiming: " + new DecimalFormat("0.00").format(time) + "ms");
+
+            startTime = System.nanoTime();
             updateImpactPredictor();
             time = (System.nanoTime() - startTime) / 1000000.0;
             if (time > 10.)
@@ -146,6 +153,11 @@ public class Aiming {
         //aiming mode
         aimingMode(player, cannon, false);
         return null;
+    }
+
+    public MessageEnum changeCraftAngle(Player player, Cannon cannon, BlockFace clickedFace, InteractAction action)
+    {
+        return updateAngle(player, cannon, clickedFace, InteractAction.adjustCraftCannon);
     }
 
     /**
@@ -337,6 +349,16 @@ public class Aiming {
             return new GunAnglesWrapper(angles, true);
         }
 
+        if (player != null && action == InteractAction.adjustCraftCannon) {
+            if (System.currentTimeMillis() - craftModeLastAimed.get(player.getUniqueId()) > 200) {
+                return new GunAnglesWrapper(null, false);
+            }
+
+            GunAngles angles = GunAngles.getGunAngle(cannon, playerLoc.getYaw(), playerLoc.getPitch());
+            cannon.setAimingFinished(angles.getAbsHorizontal() < design.getAngleStepSize() && angles.getAbsVertical() < design.getAngleStepSize());
+            return new GunAnglesWrapper(angles, true);
+        }
+
         if (isSentry && cannon.isSentryAutomatic())
             return new GunAnglesWrapper(null, false);
 
@@ -513,6 +535,94 @@ public class Aiming {
         }
 
         userMessages.sendMessage(message, player, cannon);
+        return true;
+    }
+
+    /**
+     * updates the craft aiming direction for player in craft aiming mode
+     */
+    private void updateCraftAimingMode() {
+        //player in map change the angle to the angle the player is looking
+        Iterator<Map.Entry<UUID, HashSet<UUID>>> iter = inCraftAimingMode.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry<UUID, HashSet<UUID>> entry = iter.next();
+            Player player = Bukkit.getPlayer(entry.getKey());
+            if (player == null) {
+                plugin.logDebug("player entry returned null, removing from craft mode");
+                iter.remove();
+                continue;
+            }
+
+            PlayerCraft craft = CraftManager.getInstance().getCraftByPlayer(player);
+            if (craft == null) {
+                plugin.logDebug(player.getDisplayName() + " craft entry returned null, removing from craft mode");
+                iter.remove();
+                craftModeLastAimed.remove(player.getUniqueId());
+                continue;
+            }
+
+            int controlledCannons = 0;
+            for(UUID cannonID : entry.getValue())
+            {
+                if (cannonID == null)
+                {
+                    plugin.logDebug("skipped a cannon in update craft aiming mode because a cannon ID was null");
+                    continue;
+                }
+                Cannon cannon = CannonManager.getCannon(cannonID);
+                if (cannon == null)
+                {
+                    plugin.logDebug("skipped a cannon in update craft aiming mode because a cannon was null");
+                    entry.getValue().remove(cannonID);
+                    continue;
+                }
+
+                if (!player.isOnline() || !cannon.isValid() || cannon.getCannonDesign().isSentry() && cannon.isSentryAutomatic()) {
+                    plugin.logDebug("backed out in craft fine adjusting stage");
+                    continue;
+                }
+
+                Location playerLoc = player.getLocation();
+                GunAngles angles = GunAngles.getGunAngle(cannon, playerLoc.getYaw(), playerLoc.getPitch());
+                double stepSize = cannon.getCannonDesign().getAngleStepSize();
+                if (!setHorizontalAngle(cannon, angles, stepSize) || !setVerticalAngle(cannon, angles, stepSize))
+                {
+                    continue;
+                }
+
+                // only update if since the last update some ticks have past (updateSpeed is in ticks = 50ms)
+                if (System.currentTimeMillis() < cannon.getLastAimed() + cannon.getCannonDesign().getAngleUpdateSpeed()) {
+                    controlledCannons++;
+                    continue;
+                }
+
+                if(player.getInventory().getItemInMainHand().getItemMeta() != null) {
+                    if (player.getInventory().getItemInMainHand().getItemMeta().hasDisplayName()) {
+                        String displayName = player.getInventory().getItemInMainHand().getItemMeta().getDisplayName();
+                        String cannonDesignName = cannon.getCannonDesign().getDesignName();
+                        if (!displayName.equalsIgnoreCase(cannonDesignName))
+                            continue;
+                    }
+                }
+
+                MessageEnum message = updateAngle(player, cannon, null, InteractAction.adjustCraftCannon);
+                controlledCannons++;
+            }
+            if (System.currentTimeMillis() - craftModeLastAimed.get(player.getUniqueId()) < 200) {
+                TextComponent textComponent = new TextComponent("Aiming " + controlledCannons + " cannons");
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
+            }
+        }
+    }
+
+    private boolean handleCraftAimingFineadjusting(Player player, Set<Cannon> cannons) {
+        for (Cannon cannon : cannons) {
+            if (!player.isOnline() || !cannon.isValid() || cannon.getCannonDesign().isSentry() && cannon.isSentryAutomatic()) {
+                plugin.logDebug("backed out in craft fine adjusting stage");
+                continue;
+            }
+        }
         return true;
     }
 
@@ -944,6 +1054,84 @@ public class Aiming {
         }
     }
 
+    public void craftAimingMode(Player player, Set<Cannon> cannons, boolean fire) {
+        if (player == null)
+            return;
+
+        boolean isCraftAimingMode = inCraftAimingMode.containsKey(player.getUniqueId());
+        if (isCraftAimingMode && !fire) return;
+
+        int firingCannons = 0;
+        for(Cannon cannon : cannons)
+        {
+            if (isCraftAimingMode) {
+                if (cannon == null)
+                    continue;
+
+                if(player.getInventory().getItemInMainHand().getItemMeta() != null) {
+                    if (player.getInventory().getItemInMainHand().getItemMeta().hasDisplayName()) {
+                        String displayName = player.getInventory().getItemInMainHand().getItemMeta().getDisplayName();
+                        String cannonDesignName = cannon.getCannonDesign().getDesignName();
+                        if (!displayName.equalsIgnoreCase(cannonDesignName))
+                            continue;
+                    }
+                }
+
+                if(fire){
+                    Location playerLoc = player.getLocation();
+                    GunAngles angles = GunAngles.getGunAngle(cannon, playerLoc.getYaw(), playerLoc.getPitch());
+                    double stepSize = cannon.getCannonDesign().getAngleStepSize();
+                    if (!setHorizontalAngle(cannon, angles, stepSize) || !setVerticalAngle(cannon, angles, stepSize))
+                    {
+                        plugin.logDebug("Cannon: " + cannon.getCannonName() + " Can See Target: " + false);
+                        continue;
+                    }
+                    plugin.logDebug("Cannon: " + cannon.getCannonName() + " Can See Target: " + true);
+                    plugin.logDebug("CHECK AIMING: " + cannon.getCannonName() + " is on ship: " + cannon.isOnShip());
+                    MessageEnum message = plugin.getFireCannon().playerFiring(cannon, player, InteractAction.fireCraftAim);
+                    userMessages.sendMessage(message, player, cannon);
+                    firingCannons++;
+                }
+                continue;
+            }
+
+            //enable aiming mode. Sentry cannons can't be operated by players
+            if (cannon == null || cannon.getCannonDesign().isSentry() && cannon.isSentryAutomatic()) {
+                plugin.logDebug("skipped a cannon in craft aiming mode because a cannon was null");
+                continue;
+            }
+        }
+        if(fire){
+            TextComponent textComponent = firingCannons > 0 ? new TextComponent("Firing or reloading " + firingCannons + " cannons") : new TextComponent("No cannons can fire this direction!");
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, textComponent);
+            return;
+        }
+
+        enableCraftAimingMode(player, cannons);
+    }
+
+    public void enableCraftAimingMode(Player player, Set<Cannon> cannons) {
+        if (player == null)
+            return;
+
+        //sentry can't be in aiming mode if active
+        HashSet<UUID> cannonsIDs = new HashSet<UUID>();
+        for(Cannon cannon : cannons)
+        {
+            if (cannon == null || (cannon.getCannonDesign().isSentry() && cannon.isSentryAutomatic()))
+            {
+                plugin.logDebug("skipped a cannon in enable craft aiming mode because a cannon was null");
+                continue;
+            }
+
+            cannonsIDs.add(cannon.getUID());
+        }
+
+        inCraftAimingMode.put(player.getUniqueId(), cannonsIDs);
+
+        //MessageEnum message = cannon.addCannonOperator(player, true);
+    }
+
     /**
      * switches aming mode for this cannon
      *
@@ -1372,5 +1560,9 @@ public class Aiming {
      */
     public boolean isInAimingMode(UUID player) {
         return player != null && inAimingMode.containsKey(player);
+    }
+
+    public HashMap<UUID, HashSet<UUID>> getInCraftAimingMode() {
+        return inCraftAimingMode;
     }
 }

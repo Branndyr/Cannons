@@ -16,6 +16,7 @@ import at.pavlov.cannons.dao.PersistenceDatabase;
 import at.pavlov.cannons.exchange.ExchangeLoader;
 import at.pavlov.cannons.hooks.VaultHook;
 import at.pavlov.cannons.hooks.movecraft.MovecraftHook;
+import at.pavlov.cannons.hooks.movecraft.type.FirepowerProperty;
 import at.pavlov.cannons.hooks.movecraft.type.MaxCannonsProperty;
 import at.pavlov.cannons.hooks.movecraftcombat.MovecraftCombatHook;
 import at.pavlov.cannons.hooks.papi.PlaceholderAPIHook;
@@ -105,6 +106,7 @@ public final class Cannons extends JavaPlugin {
             try {
                 Class.forName("net.countercraft.movecraft.craft.type.property.Property");
                 MaxCannonsProperty.register();
+                FirepowerProperty.register();
             } catch (Exception ignored) {
             }
 
@@ -170,10 +172,10 @@ public final class Cannons extends JavaPlugin {
 
         ExchangeLoader.registerDefaults();
 
-		DesignStorage.initialize(this);
-		ProjectileStorage.initialize(this);
-		ProjectileManager.initialize(this);
-		CannonSelector.initialize(this);
+        DesignStorage.initialize(this);
+        ProjectileStorage.initialize(this);
+        ProjectileManager.initialize(this);
+        CannonSelector.initialize(this);
 
         DesignStorage.getInstance().loadCannonDesigns();
         ProjectileStorage.getInstance().loadProjectiles();

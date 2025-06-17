@@ -62,7 +62,7 @@ public class ItemHolder {
     public ItemHolder(Material material, String description, List<String> lore) {
         this.material = Objects.requireNonNullElse(material, Material.AIR);
 
-		description = Objects.requireNonNullElse(description, "");
+        description = Objects.requireNonNullElse(description, "");
         this.displayName = description == null ? "" : ChatColor.translateAlternateColorCodes('&', description);
         this.lore = Objects.requireNonNullElseGet(lore, ArrayList::new);
     }
@@ -72,20 +72,20 @@ public class ItemHolder {
         // id;DESCRIPTION;LORE1;LORE2
         // HOE;COOL Item;Looks so cool;Fancy
         String[] entries = str.split(";");
-		lore = new ArrayList<>();
-		for (int i = 0; i < entries.length; i++) {
-			switch (i) {
-				case 0 -> {
-					material = Material.matchMaterial(entries[i]);
-					if (material == null) {
-						material = Material.AIR;
-					}
-				}
+        lore = new ArrayList<>();
+        for (int i = 0; i < entries.length; i++) {
+            switch (i) {
+                case 0 -> {
+                    material = Material.matchMaterial(entries[i]);
+                    if (material == null) {
+                        material = Material.AIR;
+                    }
+                }
 
-				case 1 -> displayName = entries[i].replace('&', '§');
-				default -> lore.add(entries[i]);
-			}
-		}
+                case 1 -> displayName = entries[i].replace('&', '§');
+                default -> lore.add(entries[i]);
+            }
+        }
     }
 
     public ItemStack toItemStack(int amount) {
@@ -140,6 +140,33 @@ public class ItemHolder {
     }
 
 
+    public boolean equalsFuzzyDiffName(ItemHolder item) {
+        if (item == null) {
+            return false;
+        }
+
+        if (!this.hasLore()) {
+            return item.getType().equals(this.material);
+        }
+        //does Item have a Lore
+        if (!item.hasLore())
+            return false;
+
+        Collection<String> similar = new HashSet<>(this.lore);
+
+        int size = similar.size();
+        similar.retainAll(item.getLore());
+
+        if (similar.size() < size)
+            return false;
+
+        return item.getType().equals(this.material);
+    }
+
+    public boolean equalsFuzzyDiffName(ItemStack item) {
+        ItemHolder itemHolder = new ItemHolder(item);
+        return equalsFuzzyDiffName(itemHolder);
+    }
     /**
      * compares id and data, but skips data comparison if one is -1
      *

@@ -7,6 +7,7 @@ public enum InteractAction
     loadProjectile,
     pushingProjectile,
     fireAutoaim,
+    fireCraftAim,
     fireSentry,
     fireRedstoneTrigger,
     fireRightClickTigger,
@@ -16,7 +17,8 @@ public enum InteractAction
     adjustPlayer,
     adjustAutoaim,
     adjustSentry,
-    adjustOther
+    adjustOther,
+    adjustCraftCannon
 
 
 }

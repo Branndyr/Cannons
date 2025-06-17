@@ -3,6 +3,7 @@ package at.pavlov.cannons.interfaces.holders;
 import at.pavlov.cannons.Cannons;
 import at.pavlov.cannons.cannon.data.CannonPosition;
 import at.pavlov.cannons.interfaces.functionalities.Updatable;
+import net.countercraft.movecraft.craft.Craft;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -32,6 +33,15 @@ public interface CannonPositionHolder extends Updatable {
 
     default void setOnShip(boolean onShip) {
         getCannonPosition().setOnShip(onShip);
+        this.hasUpdated();
+    }
+
+    default Craft getCraft() {
+        return getCannonPosition().getCraft();
+    }
+
+    default void setCraft(Craft craft) {
+        getCannonPosition().setCraft(craft);
         this.hasUpdated();
     }
 

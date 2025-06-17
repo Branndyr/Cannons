@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static at.pavlov.cannons.hooks.movecraft.type.FirepowerProperty.MAX_FIREPOWER;
 import static at.pavlov.cannons.hooks.movecraft.type.MaxCannonsProperty.MAX_CANNONS;
 
 public class CraftDetectListener implements Listener {
@@ -38,35 +39,33 @@ public class CraftDetectListener implements Listener {
         // Sum up counts of each cannon design
         Set<Cannon> cannons = cannon.getCannonsAPI().getCannons(craft);
         Map<String, Integer> cannonCount = new HashMap<>();
+        int firepowerLimit = type.getIntProperty(MAX_FIREPOWER);
+        boolean hasFirepowerLimit = firepowerLimit > -1;
+        int firepower = 0;
         for (var cannon : cannons) {
+            firepower += cannon.getCannonDesign().getFirePower();
             String design = cannon.getCannonDesign().getDesignName().toLowerCase();
             cannonCount.compute(design, (key, value) -> (value == null) ? 1 : value + 1);
         }
         printCannonCount(cannonCount);
 
-        // Check designs against maxCannons
-        int size = craft.getOrigBlockCount();
-        for (var entry : maxCannons) {
-            if (!(entry instanceof MaxCannonsEntry max))
-                throw new IllegalStateException("maxCannons must be a set of MaxCannonsEntry.");
-
-            var cannonName = max.getName();
-            var count = cannonCount.get(cannonName.toLowerCase());
-            if (count == null)
-                continue;
-
-            var result = max.detect(count, size);
-
-            result.ifPresent( error -> {
+        cannon.logDebug(String.valueOf(firepower));
+        if (hasFirepowerLimit)
+        {
+            if (firepower > firepowerLimit)
+            {
                 e.setCancelled(true);
-                e.setFailMessage("Detection Failed! You have too many cannons of the following type on this craft: "
-                        + cannonName + ": " + error);
-            });
+                e.setFailMessage("Detection Failed! Your craft's firepower is too high: "
+                        + firepower + "/" + firepowerLimit);
+                return;
+            }
         }
 
         //Mark cannons as on a craft
         for (Cannon i: cannons) {
+            cannon.logDebug("set on ship");
             i.setOnShip(true);
+            i.setCraft(craft);
         }
 
     }

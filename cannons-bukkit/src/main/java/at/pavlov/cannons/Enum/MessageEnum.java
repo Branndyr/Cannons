@@ -26,6 +26,7 @@ public enum MessageEnum
 	ErrorPlayerNotFound ("Error.PlayerNotFound", true),
 	ErrorGeneric ("Error.Generic", true),
 	ErrorNotOnShip ( "Error.NotOnShip", true),
+	ErrorFireBlacklisted ( "Error.FireBlacklisted", true),
 
     //Commands
     CmdSelectCannon ("Commands.SelectCannon"),

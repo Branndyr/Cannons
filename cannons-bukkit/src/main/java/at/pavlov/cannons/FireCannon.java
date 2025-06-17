@@ -80,6 +80,17 @@ public class FireCannon {
         if (design.isNeedsShip() && !cannon.isOnShip())
             return MessageEnum.ErrorNotOnShip;
 
+        plugin.logDebug("CHECK FIRECANNON: " + cannon.getCannonName() + " is on ship: " + cannon.isOnShip());
+        if (design.isNeedsShip() && !cannon.isOnShip())
+            return MessageEnum.ErrorNotOnShip;
+        if(cannon.isOnShip())
+        {
+            if (design.craftIsBlacklisted(cannon.getCraft()))
+            {
+                return MessageEnum.ErrorFireBlacklisted;
+            }
+        }
+
         if (player == null) {
             return MessageEnum.CannonFire;
         }
@@ -122,7 +133,7 @@ public class FireCannon {
      */
     public MessageEnum playerFiring(Cannon cannon, Player player, InteractAction action) {
         CannonDesign design = cannon.getCannonDesign();
-        boolean autoreload = player.isSneaking() && player.hasPermission(design.getPermissionAutoreload());
+        boolean autoreload = action == InteractAction.fireCraftAim || player.isSneaking() && player.hasPermission(design.getPermissionAutoreload());
 
         //todo add firing of multiple cannons
         if (!design.isLinkCannonsEnabled()) {

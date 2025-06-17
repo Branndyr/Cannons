@@ -19,6 +19,9 @@ import at.pavlov.cannons.utils.CannonSelector;
 import at.pavlov.cannons.utils.CannonsUtil;
 import at.pavlov.cannons.utils.SoundUtils;
 import com.cryptomorin.xseries.XPotion;
+import net.countercraft.movecraft.craft.CraftManager;
+import net.countercraft.movecraft.craft.PlayerCraft;
+import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -41,6 +44,7 @@ import org.bukkit.util.BlockIterator;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 public class PlayerListener implements Listener {
@@ -236,6 +240,31 @@ public class PlayerListener implements Listener {
 
         // find cannon or add it to the list
         final Cannon cannon = cannonManager.getCannon(barrel, player.getUniqueId(), false);
+
+        PlayerCraft craft = CraftManager.getInstance().getCraftByPlayer(player);
+
+        if(config.getToolAutoaim().equalsFuzzyDiffName(eventitem) && craft != null)
+        {
+            if(event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() ==  Action.RIGHT_CLICK_BLOCK)
+            {
+                if (!aiming.getInCraftAimingMode().containsKey(player.getUniqueId()))
+                {
+                    Set<Cannon> craftCannons = Cannons.getPlugin().getCannonsAPI().getCannons(craft);
+                    aiming.craftAimingMode(player, craftCannons, false);
+                }
+
+                aiming.craftModeLastAimed.put(player.getUniqueId(), System.currentTimeMillis());
+            }
+            else if(event.getAction().equals(Action.LEFT_CLICK_AIR)||event.getAction().equals(Action.LEFT_CLICK_BLOCK))
+            {
+                Set<Cannon> craftCannons = Cannons.getPlugin().getCannonsAPI().getCannons(craft);
+                for (Cannon i : craftCannons)
+                plugin.logDebug("CHECK PLAYER LISTENER: " + i.getCannonName() + " is on ship: " + i.isOnShip());
+                aiming.craftAimingMode(player, craftCannons, true);
+            }
+            return;
+        }
+
 
         // ############ select a cannon ####################
         if (isCannonSelect(event, clickedBlock, cannon)) return;

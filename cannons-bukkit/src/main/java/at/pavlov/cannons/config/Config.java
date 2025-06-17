@@ -22,14 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ *
  * @author DerPavlov
- * 
+ *
  */
 
 @Data public class Config {
-	//general
-	private boolean debugMode;
+    //general
+    private boolean debugMode;
     private boolean relayExplosionEvent;
     private int claimEdgeLength;
 
@@ -40,15 +40,15 @@ import java.util.List;
     private boolean movecraftEnabled;
     private boolean movecraftCannonEnabled;
     //endregion
-	
-	//build limits
+
+    //build limits
     private boolean buildLimitEnabled;
     private int buildLimitA;
     private int buildLimitB;
     //keepProjectileAlive
     private boolean keepAliveEnabled;
     private double keepAliveTeleportDistance;
-	//tools
+    //tools
     private ItemHolder toolAdjust = new ItemHolder("minecraft:air");
     private ItemHolder toolAutoaim = new ItemHolder("minecraft:clock");
     private double toolAutoaimRange;
@@ -101,14 +101,14 @@ import java.util.List;
     //cancelEventForLoadingItem
     private List<ItemHolder> cancelItems = new ArrayList<>();
 
-	private final Cannons plugin;
+    private final Cannons plugin;
     @Getter
     private static Config instance = null;
 
-	private Config(Cannons plugin) {
-		this.plugin = plugin;
+    private Config(Cannons plugin) {
+        this.plugin = plugin;
         this.loadConfig();
-	}
+    }
 
     public static void initialize(Cannons plugin) {
         if (instance != null) {
@@ -118,15 +118,15 @@ import java.util.List;
         instance = new Config(plugin);
     }
 
-	public void loadConfig()  {
-		// copy the default config to the disk if it does not exist
-		plugin.saveDefaultConfig();
+    public void loadConfig()  {
+        // copy the default config to the disk if it does not exist
+        plugin.saveDefaultConfig();
         plugin.reloadConfig();
 
         FileConfiguration config = plugin.getConfig();
-		
-		//general
-		setDebugMode(config.getBoolean("general.debugMode", false));
+
+        //general
+        setDebugMode(config.getBoolean("general.debugMode", false));
 
         //hooks
         setEconomyDisabled(!config.getBoolean("hooks.vault.enabled", true));
@@ -136,23 +136,23 @@ import java.util.List;
         setRelayExplosionEvent(config.getBoolean("general.relayExplosionEvent", false));
         setClaimEdgeLength(config.getInt("general.claimEdgeLength", 60));
         ArmorCalculationUtil.setMagicValue(config.getDouble("general.armorEffectiveness", 0.04));
-		
-		//limitOfCannons
-		setBuildLimitEnabled(config.getBoolean("cannonLimits.useLimits", true));
-		setBuildLimitA(config.getInt("cannonLimits.buildLimitA", 10));
-		setBuildLimitB(config.getInt("cannonLimits.buildLimitB", 2));
+
+        //limitOfCannons
+        setBuildLimitEnabled(config.getBoolean("cannonLimits.useLimits", true));
+        setBuildLimitA(config.getInt("cannonLimits.buildLimitA", 10));
+        setBuildLimitB(config.getInt("cannonLimits.buildLimitB", 2));
 
         //keepProjectileAlive
         setKeepAliveEnabled(config.getBoolean("keepProjectileAlive.enabled", true));
         setKeepAliveTeleportDistance(config.getDouble("keepProjectileAlive.teleportProjectile", 5.0));
 
-		//tools
-		setToolAdjust(new ItemHolder(config.getString("tools.adjust", "minecraft:air")));
-		setToolAutoaim(new ItemHolder(config.getString("tools.autoaim", "minecraft:clock")));
+        //tools
+        setToolAdjust(new ItemHolder(config.getString("tools.adjust", "minecraft:air")));
+        setToolAutoaim(new ItemHolder(config.getString("tools.autoaim", "minecraft:clock")));
         setToolAutoaimRange(config.getDouble("tools.autoaimRange", 4.0));
-		setToolFiring(new ItemHolder(config.getString("tools.firing", "minecraft:flint_and_steel")));
+        setToolFiring(new ItemHolder(config.getString("tools.firing", "minecraft:flint_and_steel")));
         setToolRamrod(new ItemHolder(config.getString("tools.ramrod", "minecraft:stick")));
-		setToolRotating(new ItemHolder(config.getString("tools.adjust", "minecraft:rail")));
+        setToolRotating(new ItemHolder(config.getString("tools.adjust", "minecraft:rail")));
         setToolThermometer(new ItemHolder(config.getString("tools.thermometer", "minecraft:gold_nugget")));
 
         //imitated effects
@@ -216,11 +216,11 @@ import java.util.List;
 
         //cancelEventForLoadingItem
         setCancelItems(ParseUtils.toItemHolderList(config.getStringList("cancelEventForLoadingItem")));
-	
-		//load other configs
+
+        //load other configs
 
         plugin.setDebugMode(debugMode);
-	}
+    }
 
     @Deprecated(forRemoval = true)
     public UserMessages getUserMessages() {

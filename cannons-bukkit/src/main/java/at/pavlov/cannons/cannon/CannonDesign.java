@@ -8,6 +8,8 @@ import at.pavlov.cannons.exchange.BExchanger;
 import at.pavlov.cannons.projectile.Projectile;
 import at.pavlov.internal.Key;
 import lombok.Data;
+import net.countercraft.movecraft.craft.Craft;
+import net.countercraft.movecraft.craft.type.CraftType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
@@ -19,6 +21,8 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+
+import org.bukkit.plugin.Plugin;
 
 @Data public class CannonDesign {
 	//general
@@ -152,6 +156,8 @@ import java.util.List;
 	//accessRestriction
 	private boolean accessForOwnerOnly;
 	private boolean needsShip;
+	private int firepower;
+	private List<String> craftFireBlacklist;
 	
 	//allowedProjectile
 	private List<String> allowedProjectiles;
@@ -194,7 +200,6 @@ import java.util.List;
     //cannon design block lists for every direction (NORTH, EAST, SOUTH, WEST)
     private final HashMap<BlockFace, CannonBlocks> cannonBlockMap = new HashMap<>();
 	private final EnumSet<Material> allowedMaterials = EnumSet.noneOf(Material.class);
-
 
 
     
@@ -619,4 +624,19 @@ import java.util.List;
 	}
 
 	public boolean isNeedsShip() { return needsShip; }
+
+	public int getFirePower() {return firepower;}
+
+	public boolean craftIsBlacklisted(Craft craft)
+	{
+		for (String p : craftFireBlacklist)
+		{
+			Cannons.getPlugin().logDebug("craft: " + craft.getType().getStringProperty(CraftType.NAME));
+			Cannons.getPlugin().logDebug("p: " + p);
+			if (craft.getType().getStringProperty(CraftType.NAME).equals(p))
+				return true;
+		}
+
+		return false;
+	}
 }
