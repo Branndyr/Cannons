@@ -50,6 +50,25 @@ public class CraftDetectListener implements Listener {
         printCannonCount(cannonCount);
 
         cannon.logDebug(String.valueOf(firepower));
+        int size = craft.getOrigBlockCount();
+        for (var entry : maxCannons) {
+            if (!(entry instanceof MaxCannonsEntry max))
+                throw new IllegalStateException("maxCannons must be a set of MaxCannonsEntry.");
+
+            var cannonName = max.getName();
+            var count = cannonCount.get(cannonName.toLowerCase());
+            if (count == null)
+                continue;
+
+            var result = max.detect(count, size);
+
+            result.ifPresent( error -> {
+                e.setCancelled(true);
+                e.setFailMessage("Detection Failed! You have too many cannons of the following type on this craft: "
+                        + cannonName + ": " + error);
+            });
+        }
+
         if (hasFirepowerLimit)
         {
             if (firepower > firepowerLimit)

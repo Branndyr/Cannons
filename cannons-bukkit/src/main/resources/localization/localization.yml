@@ -22,6 +22,7 @@ Error:
   PlayerNotFound: 'RED [Cannons] Player does not exist.'
   Generic: 'RED [Cannons] Error.'
   NotOnShip: 'RED [Cannons] This CANNON is not on a craft.'
+  FireBlacklisted: 'RED [Cannons] This CANNON cannot fire on this craft.'
 
 Aiming:
   EnableAimingMode: 'GREEN [Cannons] Entering aiming mode. Hold SHIFT to aim.'
