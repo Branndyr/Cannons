@@ -64,7 +64,6 @@ public interface BaseArmorHolder {
                 .sum();
 
         reduction = Math.min(reduction, 25);
-        reduction *= (random.nextFloat() * 0.5 + 0.5);
 
         // Final cap to 20
         reduction = Math.min(reduction, 20);

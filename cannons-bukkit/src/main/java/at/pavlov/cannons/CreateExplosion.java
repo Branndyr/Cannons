@@ -683,10 +683,6 @@ public class CreateExplosion {
         int blockingBlocks = this.checkLineOfSight(impactLoc, living.getEyeLocation());
         damage = damage / (blockingBlocks + 1);
 
-        // randomizer
-        float rand = r.nextFloat();
-        damage *= (rand + 0.5);
-
         // calculate the armor reduction
         double armorPiercing = Math.max(projectile.getPenetration(), 0);
         double reduction = ArmorHolder.of(living).getExplosionHitReduction(armorPiercing, damage);
