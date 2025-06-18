@@ -25,7 +25,7 @@ public class ExchangeLoader {
     public static BExchanger of(Key type, FileConfiguration config, String key, Exchanger.Type typeExchange) {
         var value = registry.get(type);
         if (value == null) {
-            Bukkit.getLogger().severe(type + " ExchangeLoader not found. Returning empty exchanger as a fallback.");
+            Bukkit.getLogger().warning(type + " ExchangeLoader not found. Returning empty exchanger as a fallback.");
             return new EmptyExchanger();
         }
 
@@ -47,7 +47,7 @@ public class ExchangeLoader {
 
     @ApiStatus.Internal
     public static void registerDefaults() {
-        Cannons.getPlugin().getHookManager().processIfPresent(VaultHook.class, (economy) -> {
+        Cannons.getPlugin().getHookManager().processIfPresent(VaultHook.class, () -> {
             register(Key.cannons("vault"), (config, key, typeExchange) -> {
                 double amount = config.getDouble(key, 0.0);
                 return new VaultExchanger(amount, typeExchange);

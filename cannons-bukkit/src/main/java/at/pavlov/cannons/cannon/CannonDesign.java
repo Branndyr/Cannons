@@ -472,7 +472,7 @@ import org.bukkit.plugin.Plugin;
     {
     	for (String p : allowedProjectiles)
     	{
-    		if (projectile.getProjectileId().equals(p))
+    		if (projectile.getProjectileID().equals(p))
     			return true;
     	}
     	

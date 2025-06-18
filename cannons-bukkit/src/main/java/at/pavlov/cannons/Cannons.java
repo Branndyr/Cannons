@@ -32,6 +32,7 @@ import at.pavlov.cannons.scheduler.FakeBlockHandler;
 import at.pavlov.cannons.scheduler.ProjectileObserver;
 import at.pavlov.cannons.utils.CannonSelector;
 import at.pavlov.cannons.utils.TimeUtils;
+import at.pavlov.internal.CLogger;
 import at.pavlov.internal.Hook;
 import at.pavlov.internal.HookManager;
 import at.pavlov.internal.ModrinthUpdateChecker;
@@ -93,6 +94,7 @@ public final class Cannons extends JavaPlugin {
     }
 
     public void onLoad() {
+        CLogger.logger = this.getLogger();
         // must be done in onLoad because "movecraft"
         AsyncTaskManager.initialize(this);
         UserMessages.initialize(this);

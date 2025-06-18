@@ -7,7 +7,7 @@ import at.pavlov.cannons.cannon.CannonManager;
 import at.pavlov.cannons.container.*;
 import at.pavlov.cannons.projectile.FlyingProjectile;
 import at.pavlov.cannons.projectile.Projectile;
-import at.pavlov.cannons.projectile.ProjectileProperties;
+import at.pavlov.internal.projectile.ProjectileProperties;
 import io.papermc.lib.PaperLib;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -341,8 +341,8 @@ public class CannonsUtil
      * @param max largest value
      * @return a integer in the given range
      */
-    public static int getRandomInt(int min, int max)
-    {
+    @Deprecated(forRemoval = true)
+    public static int getRandomInt(int min, int max) {
         return random.nextInt(max+1-min) + min;
     }
 
@@ -543,10 +543,12 @@ public class CannonsUtil
      * @return rotated blockData
      */
     public static BlockData roateBlockFacingClockwise(BlockData blockData){
-        if (blockData instanceof Directional directional){
-            directional.setFacing(roatateFace(directional.getFacing()));
+        if (blockData instanceof Directional) {
+            Directional copy = (Directional) blockData.clone(); // clone first
+            copy.setFacing(roatateFace(copy.getFacing()));
+            return copy;
         }
-        return blockData;
+        return blockData; // Not directional, return as-is
     }
 
     /**

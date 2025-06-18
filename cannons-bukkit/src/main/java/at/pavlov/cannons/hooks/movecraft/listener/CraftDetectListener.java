@@ -1,12 +1,16 @@
 package at.pavlov.cannons.hooks.movecraft.listener;
 
 import at.pavlov.cannons.Cannons;
+import at.pavlov.cannons.Enum.BreakCause;
 import at.pavlov.cannons.cannon.Cannon;
+import at.pavlov.cannons.cannon.CannonManager;
+import at.pavlov.cannons.hooks.movecraft.MovecraftUtils;
 import at.pavlov.cannons.hooks.movecraft.type.MaxCannonsEntry;
 import net.countercraft.movecraft.craft.Craft;
 import net.countercraft.movecraft.craft.PlayerCraft;
 import net.countercraft.movecraft.craft.type.CraftType;
 import net.countercraft.movecraft.events.CraftDetectEvent;
+import net.countercraft.movecraft.events.CraftSinkEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -37,7 +41,7 @@ public class CraftDetectListener implements Listener {
             return; // Return if empty set to improve performance
 
         // Sum up counts of each cannon design
-        Set<Cannon> cannons = cannon.getCannonsAPI().getCannons(craft);
+        Set<Cannon> cannons = MovecraftUtils.getCannons(craft);
         Map<String, Integer> cannonCount = new HashMap<>();
         int firepowerLimit = type.getIntProperty(MAX_FIREPOWER);
         boolean hasFirepowerLimit = firepowerLimit > -1;

@@ -2,13 +2,15 @@ package at.pavlov.cannons;
 
 import at.pavlov.cannons.Enum.DamageType;
 import at.pavlov.cannons.Enum.EntityDataType;
-import at.pavlov.cannons.Enum.FakeBlockType;
+import at.pavlov.internal.enums.FakeBlockType;
 import at.pavlov.cannons.Enum.ProjectileCause;
+import at.pavlov.cannons.armor.ArmorHolder;
 import at.pavlov.cannons.config.Config;
-import at.pavlov.cannons.container.DeathCause;
+import at.pavlov.internal.container.DeathCause;
 import at.pavlov.cannons.container.SoundHolder;
 import at.pavlov.cannons.container.SpawnEntityHolder;
-import at.pavlov.cannons.container.SpawnMaterialHolder;
+import at.pavlov.internal.Key;
+import at.pavlov.internal.container.SpawnMaterialHolder;
 import at.pavlov.cannons.dao.AsyncTaskManager;
 import at.pavlov.cannons.event.CannonDamageEvent;
 import at.pavlov.cannons.event.CannonsEntityDeathEvent;
@@ -18,10 +20,9 @@ import at.pavlov.cannons.multiversion.EventResolver;
 import at.pavlov.cannons.projectile.FlyingProjectile;
 import at.pavlov.cannons.projectile.Projectile;
 import at.pavlov.cannons.projectile.ProjectileManager;
-import at.pavlov.cannons.projectile.ProjectileProperties;
+import at.pavlov.internal.projectile.ProjectileProperties;
 import at.pavlov.cannons.projectile.ProjectileStorage;
 import at.pavlov.cannons.scheduler.FakeBlockHandler;
-import at.pavlov.cannons.utils.ArmorCalculationUtil;
 import at.pavlov.cannons.utils.CannonsUtil;
 import at.pavlov.cannons.utils.ParseUtils;
 import at.pavlov.cannons.utils.SoundUtils;
@@ -45,7 +46,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Firework;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SpectralArrow;
@@ -167,7 +167,7 @@ public class CreateExplosion {
 
         // has this projectile the super breaker property and makes block damage
         Boolean superbreaker = projectile.hasProperty(ProjectileProperties.SUPERBREAKER);
-        Boolean doesBlockDamage = projectile.getPenetrationDamage();
+        Boolean doesBlockDamage = projectile.isPenetrationDamage();
 
         // list of destroy blocks
         LinkedList<Block> blocklist = new LinkedList<>();
@@ -326,7 +326,7 @@ public class CreateExplosion {
                 this.plugin.logDebug("reset TNT fuse ticks to: " + fuseTicks + " fusetime " + fusetime);
                 tnt.setFuseTicks(fuseTicks);
             } catch (Exception e) {
-                logConvertingError(cannonball.getProjectile().getProjectileId(), e);
+                logConvertingError(cannonball.getProjectile().getProjectileID(), e);
             }
         } else if (entity instanceof AreaEffectCloud cloud) {
             try {
@@ -358,14 +358,14 @@ public class CreateExplosion {
                     cloud.addCustomEffect(effect, true);
                 }
             } catch (Exception e) {
-                logConvertingError(cannonball.getProjectile().getProjectileId(), e);
+                logConvertingError(cannonball.getProjectile().getProjectileID(), e);
             }
         } else if (entity instanceof SpectralArrow arrow) {
             try {
                 arrow.setGlowingTicks(ParseUtils.parseInt(entityData.get(EntityDataType.DURATION),
                         arrow.getGlowingTicks()));
             } catch (Exception e) {
-                logConvertingError(cannonball.getProjectile().getProjectileId(), e);
+                logConvertingError(cannonball.getProjectile().getProjectileID(), e);
             }
         } else if (entity instanceof Arrow arrow) {
             try {
@@ -377,7 +377,7 @@ public class CreateExplosion {
                     arrow.addCustomEffect(effect, true);
                 }
             } catch (Exception e) {
-                logConvertingError(cannonball.getProjectile().getProjectileId(), e);
+                logConvertingError(cannonball.getProjectile().getProjectileID(), e);
             }
         } else if (entity instanceof LivingEntity living) {
             try {
@@ -401,7 +401,7 @@ public class CreateExplosion {
                                     equipment.getItemInOffHand())));
                 }
             } catch (Exception e) {
-                logConvertingError(cannonball.getProjectile().getProjectileId(), e);
+                logConvertingError(cannonball.getProjectile().getProjectileID(), e);
             }
         } else if (entity instanceof ThrownPotion pentity) {
             try {
@@ -420,7 +420,7 @@ public class CreateExplosion {
 
                 pentity.setItem(potion);
             } catch (Exception e) {
-                logConvertingError(cannonball.getProjectile().getProjectileId(), e);
+                logConvertingError(cannonball.getProjectile().getProjectileID(), e);
             }
         }
     }
@@ -438,12 +438,12 @@ public class CreateExplosion {
      */
     private Location moveToGround(Location loc, double max_iterations) {
         Location tloc = loc.clone();
-        tloc = tloc.subtract(0, 1, 0);
-        for (int i = 0; i < max_iterations; i++) {
-            tloc = tloc.subtract(0, 1, 0);
-
-            if (tloc.getBlock().getType() != Material.AIR)
+        for (int i = 0; i < max_iterations + 1; i++) {
+            if (tloc.getBlock().getType() != Material.AIR) {
                 return tloc.add(0, 1, 0);
+            } else {
+                tloc = tloc.subtract(0, 1, 0);
+            }
         }
         return tloc;
     }
@@ -467,8 +467,8 @@ public class CreateExplosion {
 
         for (SpawnEntityHolder spawn : projectile.getSpawnEntities()) {
             // add some randomness to the amount of spawned blocks
-            int maxPlacement = CannonsUtil.getRandomInt(spawn.getMinAmount(), spawn.getMaxAmount());
-            plugin.logDebug("spawn Entity: " + spawn.getType() + " min: " + spawn.getMinAmount() + " max: " + spawn.getMaxAmount());
+            int maxPlacement = spawn.getRandomAmount();
+            plugin.logDebug("spawn Entity: " + spawn);
 
             // iterate blocks around to get a good spot
             int placedEntities = 0;
@@ -523,6 +523,7 @@ public class CreateExplosion {
      *
      * @param cannonball the fired cannonball
      */
+    private static final HashMap<Key, BlockData> bdCache = new HashMap<>();
     private void spreadBlocks(FlyingProjectile cannonball) {
         if (!cannonball.getProjectile().isSpawnEnabled())
             return;
@@ -537,7 +538,14 @@ public class CreateExplosion {
         for (SpawnMaterialHolder spawn : projectile.getSpawnBlocks()) {
 
             // add some randomness to the amount of spawned blocks
-            int maxPlacement = CannonsUtil.getRandomInt(spawn.getMinAmount(), spawn.getMaxAmount());
+            int maxPlacement = spawn.getRandomAmount();
+
+            Key materialKey = spawn.getMaterial();
+            if (!bdCache.containsKey(materialKey)) {
+                Material material = Material.matchMaterial(materialKey.full());
+                BlockData bd = material.createBlockData();
+                bdCache.put(materialKey, bd);
+            }
 
             // iterate blocks around to get a good spot
             int placedBlocks = 0;
@@ -552,7 +560,7 @@ public class CreateExplosion {
                 if (this.canPlaceBlock(placeLoc.getBlock())) {
                     placedBlocks++;
                     // place the block
-                    this.spawnFallingBlock(impactLoc, placeLoc, projectile.getSpawnVelocity(), spawn.getMaterial());
+                    this.spawnFallingBlock(impactLoc, placeLoc, projectile.getSpawnVelocity(), bdCache.get(materialKey));
                 }
             } while (iterations1 < maxPlacement * 5 && placedBlocks < maxPlacement);
 
@@ -656,18 +664,14 @@ public class CreateExplosion {
      * the projectile
      *
      * @param impactLoc
-     * @param next
+     * @param living
      * @param cannonball
      * @return - damage done to the entity
      */
-    private double getExplosionDamage(Location impactLoc, Entity next, FlyingProjectile cannonball) {
+    private double getExplosionDamage(Location impactLoc, LivingEntity living, FlyingProjectile cannonball) {
         Projectile projectile = cannonball.getProjectile();
 
-        if (!(next instanceof LivingEntity living)) {
-            return 0.0;
-        }
-
-        double dist = impactLoc.distance((living).getEyeLocation());
+        double dist = impactLoc.distance(living.getEyeLocation());
         // if the entity is too far away, return
         if (dist > projectile.getPlayerDamageRange())
             return 0.0;
@@ -684,11 +688,8 @@ public class CreateExplosion {
         damage *= (rand + 0.5);
 
         // calculate the armor reduction
-        double reduction = 1.0;
-        if (living instanceof HumanEntity human) {
-            double armorPiercing = Math.max(projectile.getPenetration(), 0);
-            reduction = ArmorCalculationUtil.getExplosionHitReduction(human, armorPiercing);
-        }
+        double armorPiercing = Math.max(projectile.getPenetration(), 0);
+        double reduction = ArmorHolder.of(living).getExplosionHitReduction(armorPiercing, damage);
 
         CannonDamageEvent event = new CannonDamageEvent(cannonball, living, damage, reduction, dist, DamageType.EXPLOSION);
         Bukkit.getServer().getPluginManager().callEvent(event);
@@ -726,11 +727,8 @@ public class CreateExplosion {
         damage *= (rand + 0.5);
 
         // calculate the armor reduction
-        double reduction = 1.0;
-        if (living instanceof HumanEntity human) {
-            double armorPiercing = Math.max(projectile.getPenetration(), 0);
-            reduction = ArmorCalculationUtil.getDirectHitReduction(human, armorPiercing);
-        }
+        double armorPiercing = Math.max(projectile.getPenetration(), 0);
+        double reduction = ArmorHolder.of(living).getDirectHitReduction(armorPiercing, damage);
 
         CannonDamageEvent event = new CannonDamageEvent(cannonball, living, damage, reduction, null, DamageType.DIRECT);
         Bukkit.getServer().getPluginManager().callEvent(event);
@@ -823,7 +821,7 @@ public class CreateExplosion {
         }
 
         boolean incendiary = projectile.hasProperty(ProjectileProperties.INCENDIARY);
-        boolean blockDamage = projectile.getExplosionDamage();
+        boolean blockDamage = projectile.isExplosionDamage();
 
         this.plugin.logDebug("Projectile impact event: " + impactLoc.getBlockX() + ", " + impactLoc.getBlockY() + ", "
                 + impactLoc.getBlockZ() + " direction: " + impactLoc.getYaw() + " Pitch: " + impactLoc.getPitch());
@@ -896,7 +894,7 @@ public class CreateExplosion {
 
             lEntities.add((LivingEntity) entity);
             if (entity instanceof Player) {
-                this.killedPlayers.put(entity.getUniqueId(), new DeathCause(cannonball.getProjectile(),
+                this.killedPlayers.put(entity.getUniqueId(), new DeathCause(cannonball.getProjectile().getProjectileID(),
                         cannonball.getCannonUID(), cannonball.getShooterUID()));
             }
         }
@@ -934,19 +932,18 @@ public class CreateExplosion {
         }
 
         plugin.logDebug("Number of Cluster explosions: " + projectile.getClusterExplosionsAmount());
-        for (int i = 0; i < projectile.getClusterExplosionsAmount(); i++) {
-            double delay = projectile.getClusterExplosionsMinDelay() + Math.random()
-                    * (projectile.getClusterExplosionsMaxDelay() - projectile.getClusterExplosionsMinDelay());
-
+        var clusterExplosionData = projectile.getClusterExplosionData();
+        for (int i = 0; i < clusterExplosionData.getClusterExplosionsAmount(); i++) {
+            double delay = clusterExplosionData.getRandomDelay();
             taskManager.scheduler.runTaskLater(cannonball.getImpactLocation(), () -> {
                         Projectile proj = cannonball.getProjectile();
 
                         Location expLoc = CannonsUtil.randomPointInSphere(cannonball.getImpactLocation(),
-                                proj.getClusterExplosionsRadius());
+                                clusterExplosionData.getClusterExplosionsRadius());
                         // only do if explosion in blocks are allowed
-                        if (proj.isClusterExplosionsInBlocks() || expLoc.getBlock().isEmpty()
+                        if (clusterExplosionData.isClusterExplosionsInBlocks() || expLoc.getBlock().isEmpty()
                                 || (expLoc.getBlock().isLiquid() && proj.isUnderwaterDamage())) {
-                            expLoc.getWorld().createExplosion(expLoc, (float) proj.getClusterExplosionsPower(), projectile.hasProperty(ProjectileProperties.INCENDIARY), true, cannonball.getProjectileEntity());
+                            expLoc.getWorld().createExplosion(expLoc, (float) clusterExplosionData.getClusterExplosionsPower(), projectile.hasProperty(ProjectileProperties.INCENDIARY), true, cannonball.getProjectileEntity());
                             CreateExplosion.this.sendExplosionToPlayers(null, expLoc,
                                     projectile.getSoundImpact());
                         }
@@ -1010,7 +1007,7 @@ public class CreateExplosion {
         while (it.hasNext()) {
             Entity next = it.next();
 
-            if (!(next instanceof LivingEntity)) {
+            if (!(next instanceof LivingEntity living)) {
                 continue;
             }
             // get previous damage
@@ -1020,7 +1017,7 @@ public class CreateExplosion {
             }
 
             // add explosion damage
-            damage += this.getExplosionDamage(impactLoc, next, cannonball);
+            damage += this.getExplosionDamage(impactLoc, living, cannonball);
             this.damageMap.put(next, damage);
         }
 
@@ -1029,7 +1026,7 @@ public class CreateExplosion {
             double damage = entry.getValue();
             Entity entity = entry.getKey();
 
-            if (!(damage >= 1) || !(entity instanceof LivingEntity living)) {
+            if (damage < 1 || !(entity instanceof LivingEntity living)) {
                 continue;
             }
 
@@ -1040,10 +1037,9 @@ public class CreateExplosion {
             living.damage(damage);
 
             // if player wears armor reduce damage if the player has take damage
-            if (living instanceof HumanEntity humanEntity && health > living.getHealth()) {
-                ArmorCalculationUtil.reduceArmorDurability(humanEntity);
+            if (health > living.getHealth()) {
+                ArmorHolder.of(living).damageArmor();
             }
-
         }
 
         // potion effects
