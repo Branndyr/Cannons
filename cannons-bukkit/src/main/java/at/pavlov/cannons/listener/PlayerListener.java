@@ -11,6 +11,7 @@ import at.pavlov.cannons.cannon.CannonDesign;
 import at.pavlov.cannons.cannon.CannonManager;
 import at.pavlov.cannons.config.Config;
 import at.pavlov.cannons.config.UserMessages;
+import at.pavlov.cannons.hooks.movecraft.MovecraftUtils;
 import at.pavlov.cannons.projectile.FlyingProjectile;
 import at.pavlov.cannons.projectile.Projectile;
 import at.pavlov.cannons.projectile.ProjectileManager;
@@ -249,7 +250,7 @@ public class PlayerListener implements Listener {
             {
                 if (!aiming.getInCraftAimingMode().containsKey(player.getUniqueId()))
                 {
-                    Set<Cannon> craftCannons = Cannons.getPlugin().getCannonsAPI().getCannons(craft);
+                    Set<Cannon> craftCannons = MovecraftUtils.getCannons(craft);
                     aiming.craftAimingMode(player, craftCannons, false);
                 }
 
@@ -257,7 +258,7 @@ public class PlayerListener implements Listener {
             }
             else if(event.getAction().equals(Action.LEFT_CLICK_AIR)||event.getAction().equals(Action.LEFT_CLICK_BLOCK))
             {
-                Set<Cannon> craftCannons = Cannons.getPlugin().getCannonsAPI().getCannons(craft);
+                Set<Cannon> craftCannons = MovecraftUtils.getCannons(craft);
                 for (Cannon i : craftCannons)
                 plugin.logDebug("CHECK PLAYER LISTENER: " + i.getCannonName() + " is on ship: " + i.isOnShip());
                 aiming.craftAimingMode(player, craftCannons, true);
